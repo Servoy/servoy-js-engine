@@ -2373,6 +2373,10 @@ public class Context {
 	}
 
 	public final void setApplicationClassLoader(ClassLoader loader) {
+		setApplicationClassLoader(loader, false);
+	}
+	
+	public final void setApplicationClassLoader(ClassLoader loader, boolean skipClassLoaderTest) {
 		if (sealed)
 			onSealedMutation();
 		if (loader == null) {
@@ -2380,7 +2384,7 @@ public class Context {
 			applicationClassLoader = null;
 			return;
 		}
-		if (!Kit.testIfCanLoadRhinoClasses(loader)) {
+		if (skipClassLoaderTest && !Kit.testIfCanLoadRhinoClasses(loader)) {
 			throw new IllegalArgumentException(
 					"Loader can not resolve Rhino classes");
 		}
