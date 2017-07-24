@@ -4,7 +4,7 @@
 	<artifactId>com.servoy.js.engine</artifactId>
 	<groupId>com.servoy</groupId>
 	<packaging>pom</packaging>
-	<version>8.2.0.3100</version>
+	<version>8.2.0.3101_rc1</version>
 
 	<properties>
 		<tycho.version>1.0.0</tycho.version>
@@ -59,6 +59,14 @@
 					<dependency-resolution>
 						<optionalDependencies>ignore</optionalDependencies>
 					</dependency-resolution>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-versions-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<properties>servoy-version,sablo.version</properties>
 				</configuration>
 			</plugin>
 		    <plugin>
