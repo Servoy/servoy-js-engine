@@ -22,3 +22,7 @@ Export-Package: org.eclipse.dltk.rhino.dbgp,
  org.mozilla.javascript.xml,
  org.mozilla.javascript.xmlimpl
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Application-Library-Allowable-Codebase: *
+Permissions: all-permissions
+Codebase: *
+
