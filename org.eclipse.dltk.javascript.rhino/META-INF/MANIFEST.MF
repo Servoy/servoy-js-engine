@@ -25,4 +25,4 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Application-Library-Allowable-Codebase: *
 Permissions: all-permissions
 Codebase: *
-
+Application-Name: Rhino Javascript Engine
