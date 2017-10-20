@@ -50,7 +50,7 @@ public class JavaScriptException extends RhinoException
         		obj = obj.getPrototype();
         	}
         	if (obj instanceof NativeError) {
-        		NativeError error = (NativeError) value;
+        		NativeError error = (NativeError) obj;
         		if (!error.has("fileName", error)) {
         			error.put("fileName", error, sourceName);
         		}
