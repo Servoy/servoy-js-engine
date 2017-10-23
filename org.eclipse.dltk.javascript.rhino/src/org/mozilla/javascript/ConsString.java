@@ -25,7 +25,7 @@ import java.util.ArrayList;
  *
  * <p>Both the name and the concept are borrowed from V8.</p>
  */
-public class ConsString implements CharSequence, Serializable {
+public class ConsString implements CharSequence, Serializable, Wrapper {
 
     private static final long serialVersionUID = -8432806714471372570L;
 
@@ -93,4 +93,11 @@ public class ConsString implements CharSequence, Serializable {
         return str.substring(start, end);
     }
 
+    /*
+	 * @see org.mozilla.javascript.Wrapper#unwrap()
+	 */
+	public Object unwrap() {
+		return toString();
+	}
+	
 }
