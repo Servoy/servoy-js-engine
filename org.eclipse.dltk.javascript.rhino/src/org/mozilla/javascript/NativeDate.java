@@ -1266,9 +1266,6 @@ public final class NativeDate extends IdScriptableObject implements Wrapper
 				time = TimeClip(internalUTC(time));
 		}
 
-        if (!Double.isNaN(time) && !Double.isInfinite(time))
-            time = TimeClip(internalUTC(time));
-
         obj.date = time;
 
         return obj;
