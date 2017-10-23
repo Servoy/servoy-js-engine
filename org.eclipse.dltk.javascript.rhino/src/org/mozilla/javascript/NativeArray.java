@@ -1721,7 +1721,7 @@ public class NativeArray extends IdScriptableObject implements List,Wrapper
         if (!(o instanceof Scriptable)) {
             return false;
         }
-        return "Array".equals(((Scriptable)o).getClassName());
+        return "Array".equals(((Scriptable)o).getClassName()) || "JavaArray".equals(((Scriptable)o).getClassName());
     }
 
     // methods to implement java.util.List
