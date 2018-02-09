@@ -22,6 +22,8 @@ public class DBGPStackManager {
 	private boolean suspenOnChangeLine;
 
 	private boolean stop;
+	
+	private boolean steppedOut;
 
 	public static DBGPStackManager getManager(Context cx, DBGPDebugger debugger) {
 		DBGPStackManager object = (DBGPStackManager) map.get(cx);
@@ -54,7 +56,7 @@ public class DBGPStackManager {
 				suspenOnChangeLine = true;
 		}
 
-		if (!suspenOnChangeLine && getManager().getSuspendOnEntry()) {
+		if (!suspenOnChangeLine && (getManager().getSuspendOnEntry()) || steppedOut) {
 			if (debugFrame.getWhere().endsWith("module")) {
 				sendSuspend(null);
 			} else
@@ -87,7 +89,10 @@ public class DBGPStackManager {
 			}
 			return;
 		}
+		boolean skipOneSuspend = false;
 		if (suspenOnChangeLine) {
+			skipOneSuspend = true;
+			steppedOut = false;
 			suspenOnChangeLine = false;
 			sendSuspend(null);
 		}
@@ -95,7 +100,7 @@ public class DBGPStackManager {
 			needSuspend = true;
 		}
 		BreakPoint hit = getManager().hit(frame.getSourceName(), lineNumber);
-		if (checkBreakpoint(frame, hit)) {
+		if (!skipOneSuspend && checkBreakpoint(frame, hit)) {
 			sendSuspend("Break on line breakpoint " + lineNumber);
 		}
 	}
@@ -241,6 +246,7 @@ public class DBGPStackManager {
 			getStackFrame(1).setSuspend(true);
 		}
 		endSuspend();
+		steppedOut = true;
 	}
 
 	public void removeBreakpoint(String id) {
