@@ -76,6 +76,9 @@ public class DBGPStackManager {
 			if (hit != null && checkBreakpoint(debugFrame, hit))
 				sendSuspend("Break on exit breakpoint: " + hit.method);
 		}
+		if (debugFrame.isSuspend() && stack.size() > 1) {
+			steppedOut = true;
+		}
 		stack.remove(debugFrame);
 
 	}
@@ -151,6 +154,7 @@ public class DBGPStackManager {
 		if (stop)
 			return;
 		throwException = false;
+		steppedOut = false;
 		if (observer.sendBreak(reason)) {
 			synchronized (this) {
 				suspended = true;
