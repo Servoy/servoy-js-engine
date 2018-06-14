@@ -20,7 +20,7 @@ final class StepOverCommand extends DBGPDebugger.Command {
 
 	void parseAndExecute(String command, HashMap options) {
 		Object tid = options.get("-i");
-		this.debugger.runTransctionId = (String) tid;
+		this.debugger.setTransactionId((String) tid);
 		if (this.debugger.getStackManager().getStackDepth() > 0) {
 			this.debugger.getStackManager().stepOver();
 		} else {
