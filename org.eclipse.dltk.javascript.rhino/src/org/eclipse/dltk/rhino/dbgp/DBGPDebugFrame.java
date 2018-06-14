@@ -160,10 +160,8 @@ public class DBGPDebugFrame implements DebugFrame {
 	}
 
 	public Object getValue(String longName) {
+		if (longName.equals("this")) return thisObj;
 		if (longName.startsWith("this.")) {
-			int indexOf = longName.indexOf('.');
-			if (indexOf == -1)
-				return thisObj;
 			longName = longName.substring("this.".length());
 			return getProperty(thisObj, longName);
 		}

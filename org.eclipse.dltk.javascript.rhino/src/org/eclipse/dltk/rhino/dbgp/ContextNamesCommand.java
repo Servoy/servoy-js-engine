@@ -22,8 +22,6 @@ final class ContextNamesCommand extends DBGPDebugger.Command {
 
 	void parseAndExecute(String command, HashMap options) {
 		String object = (String) options.get("-i");
-		this.debugger.runTransctionId = object;
-
 		this.debugger.printResponse("<response command=\"context_names\"\r\n"
 				+ "          transaction_id=\"" + options.get("-i") + "\">"
 				+ "    <context name=\"Local\" id=\"0\"/>\r\n"
