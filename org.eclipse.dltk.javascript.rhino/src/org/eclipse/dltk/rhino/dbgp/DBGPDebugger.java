@@ -10,6 +10,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.WeakHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -52,7 +54,7 @@ public class DBGPDebugger extends Thread implements Debugger,
 
 	HashMap properties = new HashMap();
 
-	String runTransctionId;
+	private String runTransctionId;
 
 	public volatile boolean isInited;
 
@@ -62,6 +64,8 @@ public class DBGPDebugger extends Thread implements Debugger,
 	private final BreakPointManager breakPointManager;
 
 	private DBGPStackManager stackmanager;
+	
+	private final ExecutorService executorService = Executors.newCachedThreadPool();
 
 	public DBGPDebugger(Socket socket, String file, String string, Context ct)
 			throws IOException {
@@ -454,49 +458,14 @@ public class DBGPDebugger extends Thread implements Debugger,
 				if (c < 0)
 					break;
 				if (c < 32) {
-					String s = buf.toString();
-					int indexOf = s.indexOf(' ');
-					if (indexOf != -1)
-
-					{
-						String commandId = buf.substring(0, indexOf);
-						Command object = (Command) strategies.get(commandId);
-						if (object == null) {
-							System.err.println(commandId);
-							continue;
+					final String command = buf.toString();
+					executorService.execute(new Runnable() {
+						@Override
+						public void run() {
+							executeCommand(command);
 						}
-						HashMap options = new HashMap();
+					});
 
-						String result = buf.substring(indexOf);
-						int index = result.indexOf(" -");
-						while (index != -1 && index != result.length()) {
-							int space = result.indexOf(' ', index + 2);
-							int nextIndex = result.indexOf(" -", space + 1);
-							if (nextIndex == -1)
-								nextIndex = result.length();
-							String key = result.substring(index + 1, space);
-							String value = result.substring(space + 1,
-									nextIndex);
-
-							options.put(key, value);
-							index = nextIndex;
-
-						}
-						if (!isInited && object instanceof RunCommand) {
-							synchronized (this) {
-								isInited = true;
-								notifyAll();
-							}
-						}
-						try {
-							Context.enter();
-							object.parseAndExecute(result, options);
-						} catch (Throwable t) {
-							t.printStackTrace();
-						} finally {
-							Context.exit();
-						}
-					}
 					buf = new StringBuffer();
 				} else {
 					buf.append((char) c);
@@ -514,6 +483,51 @@ public class DBGPDebugger extends Thread implements Debugger,
 		}
 
 	}
+	
+	private void executeCommand(final String command) {
+		int indexOf = command.indexOf(' ');
+		if (indexOf != -1)
+
+		{
+			String commandId = command.substring(0, indexOf);
+			Command object = (Command) strategies.get(commandId);
+			if (object == null) {
+				System.err.println(commandId);
+				return;
+			}
+			HashMap options = new HashMap();
+
+			String result = command.substring(indexOf);
+			int index = result.indexOf(" -");
+			while (index != -1 && index != result.length()) {
+				int space = result.indexOf(' ', index + 2);
+				int nextIndex = result.indexOf(" -", space + 1);
+				if (nextIndex == -1)
+					nextIndex = result.length();
+				String key = result.substring(index + 1, space);
+				String value = result.substring(space + 1,
+						nextIndex);
+
+				options.put(key, value);
+				index = nextIndex;
+
+			}
+			if (!isInited && object instanceof RunCommand) {
+				synchronized (this) {
+					isInited = true;
+					notifyAll();
+				}
+			}
+			try {
+				Context.enter();
+				object.parseAndExecute(result, options);
+			} catch (Throwable t) {
+				t.printStackTrace();
+			} finally {
+				Context.exit();
+			}
+		}
+	}
 
 	public DebugFrame getFrame(Context cx, DebuggableScript fnOrScript) {
 		return new DBGPDebugFrame(cx, fnOrScript, this);
@@ -523,11 +537,13 @@ public class DBGPDebugger extends Thread implements Debugger,
 			String source) {
 	}
 
-	public boolean sendBreak(String reason) {
+	public synchronized boolean sendBreak(String reason) {
 		printResponse("<response command=\"run\"\r\n" + "status=\"break\""
 				+ " reason=\"ok\"" + " transaction_id=\"" + runTransctionId
 				+ "\">\r\n" + Base64Helper.encodeString(reason)
 				+ "</response>\r\n" + "");
+		// this transaction id is now send, set it to nul;
+		runTransctionId = null;
 		return socket != null && out != null;
 	}
 
@@ -577,7 +593,12 @@ public class DBGPDebugger extends Thread implements Debugger,
 		}
 	}
 
-	public void setTransactionId(String id) {
+	public synchronized void setTransactionId(String id) {
+		if (runTransctionId != null) {
+			printResponse("<response command=\"run\"\r\n" + "status=\"running\""
+					+ " reason=\"ok\"" + " transaction_id=\"" + runTransctionId
+					+ "\"></response>\r\n" );
+		}
 		runTransctionId = id;
 	}
 

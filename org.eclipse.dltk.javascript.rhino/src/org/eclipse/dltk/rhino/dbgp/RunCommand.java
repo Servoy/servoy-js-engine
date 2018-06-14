@@ -20,7 +20,7 @@ final class RunCommand extends DBGPDebugger.Command {
 
 	void parseAndExecute(String command, HashMap options) {
 		String object = (String) options.get("-i");
-		this.debugger.runTransctionId = object;
+		this.debugger.setTransactionId(object);
 		while (!this.debugger.isInited) {
 			Thread.yield();
 		}
