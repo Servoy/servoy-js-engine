@@ -25,11 +25,13 @@ public class DBGPStackManager {
 	
 	private boolean steppedOut;
 
+	private Context context;
+
 	public static DBGPStackManager getManager(Context cx, DBGPDebugger debugger) {
 		DBGPStackManager object = (DBGPStackManager) map.get(cx);
 		if (object != null)
 			return object;
-		object = new DBGPStackManager(debugger);
+		object = new DBGPStackManager(debugger,cx);
 		map.put(cx, object);
 		return object;
 	}
@@ -38,8 +40,13 @@ public class DBGPStackManager {
 		return (DBGPStackManager) map.remove(cx);
 	}
 
-	private DBGPStackManager(DBGPDebugger debugger) {
+	private DBGPStackManager(DBGPDebugger debugger, Context context) {
 		observer = debugger;
+		this.context = context;
+	}
+	
+	public Context getContext() {
+		return context;
 	}
 
 	public final BreakPointManager getManager() {

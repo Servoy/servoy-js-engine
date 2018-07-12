@@ -9,9 +9,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Stack;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -63,18 +66,22 @@ public class DBGPDebugger extends Thread implements Debugger,
 
 	private final BreakPointManager breakPointManager;
 
-	private DBGPStackManager stackmanager;
+	private Stack<DBGPStackManager> stackmanagers = new Stack<>();
 	
-	private final ExecutorService executorService = Executors.newCachedThreadPool();
+	private final ExecutorService executorService = Executors.newCachedThreadPool(new ThreadFactory() {
+		
+		@Override
+		public Thread newThread(Runnable r) {
+			return new CommandHandlerThread(r);
+		}
+	});
 
 	public DBGPDebugger(Socket socket, String file, String string, Context ct)
 			throws IOException {
 		super("Debug command reader");
 		this.socket = socket;
 		this.breakPointManager = new BreakPointManager();
-		DBGPStackManager stackmanager = DBGPStackManager.getManager(ct, this);
-		setStackManager(stackmanager);
-		stackmanager.suspend();
+		pushStackManager(ct).suspend();
 		out = new PrintStream(socket.getOutputStream());
 		String response = "<init appid=\"APPID\"\r\n" + "      idekey=\""
 				+ string + "\"\r\n" + "      session=\"" + string + "\"\r\n"
@@ -117,10 +124,6 @@ public class DBGPDebugger extends Thread implements Debugger,
 		return max_depth_feature;
 	}
 
-	public void setContext(Context cx) {
-		setStackManager(DBGPStackManager.getManager(cx, this));
-	}
-
 	/**
 	 * @return
 	 */
@@ -129,11 +132,24 @@ public class DBGPDebugger extends Thread implements Debugger,
 	}
 
 	public DBGPStackManager getStackManager() {
-		return stackmanager;
+		return stackmanagers.peek();
 	}
 
-	public void setStackManager(DBGPStackManager manager) {
-		this.stackmanager = manager;
+	public DBGPStackManager pushStackManager(Context cx) {
+		DBGPStackManager stackmanager = DBGPStackManager.getManager(cx, this);
+		stackmanagers.push(stackmanager);
+		return stackmanager;
+	}
+	
+	public void popStackManager(Context cx) {
+		// normally this should be the top one, but we really should remove the one for that context
+		Iterator<DBGPStackManager> iterator = stackmanagers.iterator();
+		while( iterator.hasNext()) {
+			if (iterator.next().getContext() == cx) {
+				iterator.remove();
+				break;
+			}
+		}
 	}
 
 	synchronized void printResponse(String response) {
@@ -538,13 +554,16 @@ public class DBGPDebugger extends Thread implements Debugger,
 	}
 
 	public synchronized boolean sendBreak(String reason) {
-		printResponse("<response command=\"run\"\r\n" + "status=\"break\""
-				+ " reason=\"ok\"" + " transaction_id=\"" + runTransctionId
-				+ "\">\r\n" + Base64Helper.encodeString(reason)
-				+ "</response>\r\n" + "");
-		// this transaction id is now send, set it to nul;
-		runTransctionId = null;
-		return socket != null && out != null;
+		if (runTransctionId != null) {
+			printResponse("<response command=\"run\"\r\n" + "status=\"break\"" + " reason=\"ok\"" + " transaction_id=\""
+					+ runTransctionId + "\">\r\n" + Base64Helper.encodeString(reason) + "</response>\r\n" + "");
+			// this transaction id is now send, set it to nul;
+			runTransctionId = null;
+			return socket != null && out != null;
+		} else {
+			new RuntimeException("Sendbreak called " + reason + "  but there was no transaction id").printStackTrace();
+		}
+		return false;
 	}
 
 	public void outputStdOut(String value) {
@@ -563,10 +582,12 @@ public class DBGPDebugger extends Thread implements Debugger,
 	}
 
 	public void sendEnd(boolean close) {
-		printResponse("<response command=\"run\"\r\n" + "status=\"stopped\""
-				+ " reason=\"ok\"" + " transaction_id=\"" + runTransctionId
-				+ "\">\r\n" + "</response>\r\n" + "");
-		if (close) close();
+		if (runTransctionId != null) {
+			printResponse("<response command=\"run\"\r\n" + "status=\"stopped\"" + " reason=\"ok\""
+					+ " transaction_id=\"" + runTransctionId + "\">\r\n" + "</response>\r\n" + "");
+		}
+		if (close)
+			close();
 	}
 
 	public void close() {
