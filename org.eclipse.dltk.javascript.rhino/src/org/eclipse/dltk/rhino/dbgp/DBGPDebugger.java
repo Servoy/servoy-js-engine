@@ -132,6 +132,7 @@ public class DBGPDebugger extends Thread implements Debugger,
 	}
 
 	public DBGPStackManager getStackManager() {
+		if (stackmanagers.size() == 0) return null;
 		return stackmanagers.peek();
 	}
 
@@ -596,6 +597,7 @@ public class DBGPDebugger extends Thread implements Debugger,
 		getBreakPointManager().removeBreakPoints();
 		// shouldnt all the stackmanagers be resumed?
 		DBGPStackManager.stopAll();
+		stackmanagers.clear();
 		if (socket != null) {
 			try {
 				socket.close();

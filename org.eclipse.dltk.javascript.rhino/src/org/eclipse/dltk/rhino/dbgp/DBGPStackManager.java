@@ -205,10 +205,6 @@ public class DBGPStackManager {
 		return getStackFrame(0).getLineNumber();
 	}
 
-	public void registerBreakPoint(BreakPoint p) {
-		getManager().addBreakPoint(p);
-	}
-
 	public synchronized void resume() {
 		for (int a = 0; a < this.getStackDepth(); a++) {
 			this.getStackFrame(a).setSuspend(false);
@@ -258,24 +254,6 @@ public class DBGPStackManager {
 		}
 		endSuspend();
 		steppedOut = true;
-	}
-
-	public void removeBreakpoint(String id) {
-		this.getManager().removeBreakPoint(id);
-	}
-
-	public void updateBreakpoint(String id, String newState, String newLine,
-			String hitValue, String hitCondition, String condExpr) {
-		this.getManager().updateBreakpoint(id, newState, newLine, hitValue,
-				hitCondition, condExpr);
-	}
-
-	public DBGPDebugger getDBGPDebugger() {
-		return observer;
-	}
-
-	public BreakPoint getBreakpoint(String id) {
-		return this.getManager().getBreakpoint(id);
 	}
 
 	public static void stopAll() {

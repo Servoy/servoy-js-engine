@@ -21,8 +21,9 @@ final class StepIntoCommand extends DBGPDebugger.Command {
 	void parseAndExecute(String command, HashMap options) {
 		Object tid = options.get("-i");
 		this.debugger.setTransactionId((String) tid);
-		if (this.debugger.getStackManager().getStackDepth() > 0) {
-			this.debugger.getStackManager().stepIn();
+		DBGPStackManager stackManager = this.debugger.getStackManager();
+		if (stackManager != null && stackManager.getStackDepth() > 0) {
+			stackManager.stepIn();
 		} else {
 			while (!this.debugger.isInited) {
 				Thread.yield();
@@ -30,7 +31,8 @@ final class StepIntoCommand extends DBGPDebugger.Command {
 			synchronized (this.debugger) {
 				this.debugger.notify();
 			}
-			this.debugger.getStackManager().resume();
+			stackManager = this.debugger.getStackManager();
+			if (stackManager != null) stackManager.resume();
 		}
 	}
 }

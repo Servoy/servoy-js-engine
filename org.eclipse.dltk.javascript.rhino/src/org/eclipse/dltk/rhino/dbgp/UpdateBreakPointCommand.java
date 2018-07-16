@@ -32,7 +32,7 @@ final class UpdateBreakPointCommand extends DBGPDebugger.Command {
 		}
 
 		try {
-			this.debugger.getStackManager().updateBreakpoint(id, newState,
+			this.debugger.getBreakPointManager().updateBreakpoint(id, newState,
 					newLine, hitValue, hitCondition, condEString);
 		} catch (Exception e) {
 			e.printStackTrace();
