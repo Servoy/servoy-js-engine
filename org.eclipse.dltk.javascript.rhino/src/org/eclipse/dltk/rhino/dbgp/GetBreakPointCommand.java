@@ -15,7 +15,7 @@ public class GetBreakPointCommand extends Command {
 	void parseAndExecute(String command, HashMap options) {
 		String id = (String) options.get("-d");
 
-		BreakPoint breakpoint = this.debugger.getStackManager().getBreakpoint(
+		BreakPoint breakpoint = this.debugger.getBreakPointManager().getBreakpoint(
 				id);
 		if (breakpoint == null) {
 			this.debugger
