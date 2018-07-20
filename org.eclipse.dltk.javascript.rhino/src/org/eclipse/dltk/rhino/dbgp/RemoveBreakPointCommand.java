@@ -21,7 +21,7 @@ final class RemoveBreakPointCommand extends DBGPDebugger.Command {
 	}
 
 	void parseAndExecute(String command, HashMap options) {
-		this.debugger.getStackManager().removeBreakpoint(
+		this.debugger.getBreakPointManager().removeBreakPoint(
 				(String) options.get("-d"));
 		this.debugger
 				.printResponse("<response command=\"breakpoint_remove\"\r\n"

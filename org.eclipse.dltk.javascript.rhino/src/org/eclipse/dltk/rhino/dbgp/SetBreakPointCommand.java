@@ -20,7 +20,7 @@ final class SetBreakPointCommand extends DBGPDebugger.Command {
 
 	void parseAndExecute(String command, HashMap options) {
 		BreakPoint p = new BreakPoint(options);
-		this.debugger.getStackManager().registerBreakPoint(p);
+		this.debugger.getBreakPointManager().addBreakPoint(p);
 		this.debugger.printResponse("<response command=\"breakpoint_set\"\r\n"
 				+ " transaction_id=\"" + options.get("-i") + "\" " + " id=\"p"
 				+ p.id + "\" state=\"enabled\" > " + "</response>\r\n" + "");
