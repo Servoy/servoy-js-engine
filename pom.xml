@@ -4,7 +4,7 @@
 	<artifactId>com.servoy.js.engine</artifactId>
 	<groupId>com.servoy</groupId>
 	<packaging>pom</packaging>
-	<version>8.3.3.3208_rc</version>
+	<version>8.3.3.3209</version>
 
 	<properties>
 		<tycho.version>1.1.0</tycho.version>
