@@ -1,5 +1,6 @@
 package org.eclipse.dltk.rhino.dbgp;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -210,141 +211,171 @@ public class DBGPDebugger extends Thread implements Debugger,
 	
 	protected void printProperty(String id, String fullName, Object value,
 			StringBuffer properties, int level, boolean addChilds) {
-		boolean hasChilds = false;
-
-		int numC = 0;
-		String vlEncoded;
-		String name_of_object_class = "";
-		String data_type = getDataType(value);
-
-		if (value instanceof Scriptable) {
-			hasChilds = true;
-			StringBuffer stringBuffer = new StringBuffer();
-			Scriptable p = (Scriptable) value;
-			value = stringBuffer;
-			String nv = p.getClassName();
-			name_of_object_class = nv;
-			if (p instanceof NativeJavaObject) {
-
-				NativeJavaObject obj = (NativeJavaObject) p;
-
-				Object unwrap = obj.unwrap();
-				if (unwrap instanceof Class) {
-					nv = ((Class) unwrap).getName();
-				} else if (unwrap.getClass().isArray()) {
-					nv = "Array";
-					// String string = unwrap.getClass().getName();
-					// int len = Array.getLength(unwrap);
-					// int q = string.indexOf('[');
-					// if (q != -1)
-					// string = string.substring(0, q);
-					// int q1 = string.indexOf(']');
-					// nv = string + "[" + len + "]";
-					// if (q1 != -1)
-					// nv += string.substring(q1);
+		printProperty(id, fullName, value, properties, level, addChilds, true);
+	}
+	
+	protected void printProperty(String id, String fullName, Object value,
+			StringBuffer properties, int level, boolean addChilds, boolean safe) {
+		
+		int oldPropertiesLength = properties.length();
+		Object initialValue = value;
+		try {
+			boolean hasChilds = false;
+	
+			int numC = 0;
+			String vlEncoded;
+			String name_of_object_class = "";
+			String data_type = getDataType(value);
+	
+			if (value instanceof Scriptable) {
+				hasChilds = true;
+				StringBuffer stringBuffer = new StringBuffer();
+				Scriptable p = (Scriptable) value;
+				value = stringBuffer;
+				String nv = p.getClassName();
+				name_of_object_class = nv;
+				if (p instanceof NativeJavaObject) {
+	
+					NativeJavaObject obj = (NativeJavaObject) p;
+	
+					Object unwrap = obj.unwrap();
+					if (unwrap instanceof Class) {
+						nv = ((Class) unwrap).getName();
+					} else if (unwrap.getClass().isArray()) {
+						nv = "Array";
+						// String string = unwrap.getClass().getName();
+						// int len = Array.getLength(unwrap);
+						// int q = string.indexOf('[');
+						// if (q != -1)
+						// string = string.substring(0, q);
+						// int q1 = string.indexOf(']');
+						// nv = string + "[" + len + "]";
+						// if (q1 != -1)
+						// nv += string.substring(q1);
+					} else {
+						if (unwrap instanceof String) {
+							nv = "JavaString " + '"' + unwrap.toString() + '"';
+						} else {
+							String string = unwrap.toString();
+	
+							nv = string;
+							// nv = unwrap.getClass().getName() + "(" + string +
+							// ")";
+						}
+					}
+	
+				} else if (p instanceof Wrapper) {
+					Wrapper wrapper = (Wrapper) p;
+					Object wrapped = wrapper.unwrap();
+	
+					if (wrapped == null) {
+						nv = "Undefined";
+					} else if (!wrapped.getClass().isArray()) {
+						// if it is an array let the normal array handling do the
+						// job
+						// now just do toString();
+						nv = wrapped.toString();
+					}
+				} else if (p instanceof XMLObject) {
+					nv = ((XMLObject) p).toString();
+					data_type = "XML";
+				}
+	
+				stringBuffer.append(Base64Helper.encodeString(nv));
+				if (addChilds) {
+					HashSet duplicates = new HashSet();
+					Scriptable prototype = p;
+					boolean includeFunc = true;
+					while (prototype != null) {
+						numC += createChilds(fullName, level, stringBuffer,
+								prototype, duplicates, includeFunc);
+						includeFunc = false;
+						prototype = prototype.getPrototype();
+					}
 				} else {
-					if (unwrap instanceof String) {
-						nv = "JavaString " + '"' + unwrap.toString() + '"';
-					} else {
-						String string = unwrap.toString();
-
-						nv = string;
-						// nv = unwrap.getClass().getName() + "(" + string +
-						// ")";
-					}
-				}
-
-			} else if (p instanceof Wrapper) {
-				Wrapper wrapper = (Wrapper) p;
-				Object wrapped = wrapper.unwrap();
-
-				if (wrapped == null) {
-					nv = "Undefined";
-				} else if (!wrapped.getClass().isArray()) {
-					// if it is an array let the normal array handling do the
-					// job
-					// now just do toString();
-					nv = wrapped.toString();
-				}
-			} else if (p instanceof XMLObject) {
-				nv = ((XMLObject) p).toString();
-				data_type = "XML";
-			}
-
-			stringBuffer.append(Base64Helper.encodeString(nv));
-			if (addChilds) {
-				HashSet duplicates = new HashSet();
-				Scriptable prototype = p;
-				boolean includeFunc = true;
-				while (prototype != null) {
-					numC += createChilds(fullName, level, stringBuffer,
-							prototype, duplicates, includeFunc);
-					includeFunc = false;
-					prototype = prototype.getPrototype();
-				}
-			} else {
-				HashSet duplicates = new HashSet();
-				Scriptable prototype = p;
-				boolean includeFunc = true;
-				while (prototype != null) {
-					Object[] ids = null;
-					if (prototype instanceof LazyInitScope) {
-						ids = ((LazyInitScope) prototype).getInitializedIds();
-					} else {
-						ids = prototype.getIds();
-					}
-					for (int a = 0; a < ids.length; a++) {
-						if (!duplicates.add(ids[a]))
-							continue;
-						Object pvalue = null;
-						try {
-							if (ids[a] instanceof Integer) {
-								pvalue = prototype
-										.get(((Integer) ids[a]).intValue(), p);
-							} else
-								pvalue = prototype.get(ids[a].toString(), p);
-						} catch (Exception e) {
-							// dont let the debugger crash.
-							e.printStackTrace();
+					HashSet duplicates = new HashSet();
+					Scriptable prototype = p;
+					boolean includeFunc = true;
+					while (prototype != null) {
+						Object[] ids = null;
+						if (prototype instanceof LazyInitScope) {
+							ids = ((LazyInitScope) prototype).getInitializedIds();
+						} else {
+							ids = prototype.getIds();
 						}
-
-						if (addProperty(pvalue) && (includeFunc || !(pvalue instanceof Function))) // HACK because
-						// ShowFunctionsAction
-						// doesnt work because of
-						// the lazy behavior of
-						// plugins in Eclipse
-						{
-							numC++;
+						for (int a = 0; a < ids.length; a++) {
+							if (!duplicates.add(ids[a]))
+								continue;
+							Object pvalue = null;
+							try {
+								if (ids[a] instanceof Integer) {
+									pvalue = prototype
+											.get(((Integer) ids[a]).intValue(), p);
+								} else
+									pvalue = prototype.get(ids[a].toString(), p);
+							} catch (Exception e) {
+								// dont let the debugger crash.
+								e.printStackTrace();
+							}
+	
+							if (addProperty(pvalue) && (includeFunc || !(pvalue instanceof Function))) // HACK because
+							// ShowFunctionsAction
+							// doesnt work because of
+							// the lazy behavior of
+							// plugins in Eclipse
+							{
+								numC++;
+							}
 						}
+						includeFunc = false;
+						prototype = prototype.getPrototype();
 					}
-					includeFunc = false;
-					prototype = prototype.getPrototype();
 				}
-			}
-			vlEncoded = stringBuffer.toString();
-		} else {
-			if (!(value instanceof Undefined)) {
-				if (value == UniqueTag.NOT_FOUND) {
-					vlEncoded = "";
-				} else
-					vlEncoded = Base64Helper.encodeString(value != null ? value
-							.toString() : "null");
+				vlEncoded = stringBuffer.toString();
 			} else {
-				vlEncoded = Base64Helper.encodeString("Undefined");
+				if (!(value instanceof Undefined)) {
+					if (value == UniqueTag.NOT_FOUND) {
+						vlEncoded = "";
+					} else
+						vlEncoded = Base64Helper.encodeString(value != null ? value
+								.toString() : "null");
+				} else {
+					vlEncoded = Base64Helper.encodeString("Undefined");
+				}
+				if (value != null)
+					name_of_object_class = value.getClass().getName();
 			}
-			if (value != null)
-				name_of_object_class = value.getClass().getName();
+			id = escapeHTML(id);
+			fullName = escapeHTML(fullName);
+	
+			properties.append("<property\r\n" + "    name=\"" + id + "\"\r\n"
+					+ "    fullname=\"" + fullName + "\"\r\n" + "    type=\""
+					+ data_type + "\"\r\n" + "    classname=\""
+					+ name_of_object_class + "\"\r\n" + "    constant=\"0\"\r\n"
+					+ "    children=\"" + (hasChilds ? 1 : 0) + "\"\r\n"
+					+ "    encoding=\"base64\"\r\n" + "    numchildren=\"" + numC
+					+ "\">\r\n" + vlEncoded + "</property>\r\n");
+		} catch (Exception e) {
+			if (safe) {
+				e.printStackTrace();
+				ByteArrayOutputStream stackStream = new ByteArrayOutputStream();
+				Throwable ce = e;
+				PrintStream printer = new PrintStream(stackStream);
+				while (ce != null) {
+					ce.printStackTrace(printer);
+					ce = ce.getCause();
+				}
+				String stackString;
+				try {
+					stackString = new String(stackStream.toByteArray(), "UTF-8");
+				} catch (UnsupportedEncodingException e1) {
+					stackString = "";
+				}
+				
+				properties.setLength(oldPropertiesLength);
+				printProperty(id, fullName, "<error printing evaluated value in debugger:\nvalue class: " + initialValue.getClass().getName() + "\nvalue.toString() is: " + String.valueOf(initialValue) + "\n\nException: "+ e.getMessage() + "\n" + stackString + ">", properties, level, addChilds, false);
+			} else throw e;
 		}
-		id = escapeHTML(id);
-		fullName = escapeHTML(fullName);
-
-		properties.append("<property\r\n" + "    name=\"" + id + "\"\r\n"
-				+ "    fullname=\"" + fullName + "\"\r\n" + "    type=\""
-				+ data_type + "\"\r\n" + "    classname=\""
-				+ name_of_object_class + "\"\r\n" + "    constant=\"0\"\r\n"
-				+ "    children=\"" + (hasChilds ? 1 : 0) + "\"\r\n"
-				+ "    encoding=\"base64\"\r\n" + "    numchildren=\"" + numC
-				+ "\">\r\n" + vlEncoded + "</property>\r\n");
 	}
 
 	private static String escapeHTML(String content) {
