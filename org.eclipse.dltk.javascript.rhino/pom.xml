@@ -6,11 +6,7 @@
 	<parent>
 		<groupId>com.servoy</groupId>
 		<artifactId>com.servoy.js.engine</artifactId>
-<<<<<<< HEAD
 		<version>8.5.0.3600_b1</version>
-=======
-		<version>2019.9.0.3520_rc</version>
->>>>>>> refs/remotes/origin/master
 	</parent>
 	<artifactId>org.eclipse.dltk.javascript.rhino</artifactId>
 	<packaging>eclipse-plugin</packaging>
