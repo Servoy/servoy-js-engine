@@ -2,7 +2,11 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Servoy JavaScript Plug-in
 Bundle-SymbolicName: org.eclipse.dltk.javascript.rhino
+<<<<<<< HEAD
 Bundle-Version: 8.5.0.3600_b1
+=======
+Bundle-Version: 2019.9.0.3520_rc
+>>>>>>> refs/remotes/origin/master
 Bundle-Vendor: Servoy
 Export-Package: org.eclipse.dltk.rhino.dbgp,
  org.mozilla.classfile,
