@@ -5,22 +5,62 @@
 	<groupId>com.servoy</groupId>
 	<packaging>pom</packaging>
 	<version>2019.12.0.3540_rc</version>
-
+	<prerequisites>
+		<maven>3.6.0</maven>
+	</prerequisites>	
 	<properties>
 		<tycho.version>1.4.0</tycho.version>
 		<tycho.extra.version>1.4.0</tycho.extra.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 	    <maven.compiler.target>1.8</maven.compiler.target>
+	    <eclipse.url>http://download.eclipse.org/eclipse/updates/4.13/</eclipse.url>
 	</properties>
 
+	<repositories>
+		<repository>
+			<id>servoy</id>
+			<url>${eclipse.url}</url>
+			<layout>p2</layout>
+		</repository>
+	</repositories>
+	
 	<build>
 		<plugins>
+		<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-toolchains-plugin</artifactId>
+						<version>3.0.0</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>toolchain</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<toolchains>
+								<jdk>
+									<id>JavaSE-1.8</id>
+								</jdk>
+							</toolchains>
+						</configuration>
+					</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-maven-plugin</artifactId>
 				<version>${tycho.version}</version>
 				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-compiler-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+				 	<compilerArgument>-warn:none</compilerArgument>
+				 	<useProjectSettings>false</useProjectSettings>
+					<useJDK>BREE</useJDK>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
@@ -75,7 +115,7 @@
 		    <plugin>
 		    <groupId>org.apache.maven.plugins</groupId>
 		    <artifactId>maven-jarsigner-plugin</artifactId>
-		    <version>1.4</version>
+		    <version>3.0.0</version>
 		    <executions>
 		     <execution>
 		      <id>sign</id>
