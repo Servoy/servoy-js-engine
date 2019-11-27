@@ -172,6 +172,25 @@ public class JavaMembers
         return map.keySet().toArray(new Object[map.size()]);
     }
 
+    boolean isDeprecated(String name,boolean isStatic)
+    {
+    	  Map<String,Object> ht = isStatic ? staticMembers : members;
+          Object member = ht.get(name);
+          if (!isStatic && member == null) {
+              // Try to get static member from instance (LC3)
+              member = staticMembers.get(name);
+          }
+          if (member instanceof BeanProperty) {
+              BeanProperty bp = (BeanProperty) member;
+             
+              if (bp.getter.method().getAnnotation(Deprecated.class) != null)
+              {
+            	  return true;
+              }
+          }
+          return false;
+    }
+    
     static String javaSignature(Class<?> type)
     {
         if (!type.isArray()) {

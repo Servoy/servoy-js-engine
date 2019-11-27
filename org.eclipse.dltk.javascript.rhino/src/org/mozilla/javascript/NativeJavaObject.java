@@ -87,6 +87,15 @@ public class NativeJavaObject implements Scriptable, Wrapper, Serializable
         return members.get(this, name, javaObject, false);
     }
 
+    public boolean isDeprecated(String name)
+    {
+    	if (has(name,null))
+    	{
+    		return members.isDeprecated(name, false);
+    	}
+    	return false;
+    }
+    
     public Object get(int index, Scriptable start) {
         throw members.reportMemberNotFound(Integer.toString(index));
     }
