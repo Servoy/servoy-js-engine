@@ -440,6 +440,8 @@ public class DBGPDebugger extends Thread implements Debugger,
 			}
 			if (addProperty(pvalue) && (includeFunc || !(pvalue instanceof Function))) 
 			{
+				if (p instanceof NativeJavaObject && ids[a] instanceof String && ((NativeJavaObject)p).isDeprecated((String)ids[a]))
+					continue;
 				counter++;
 				if (ids[a] instanceof Integer) {
 					printProperty(ids[a].toString(), fullName + "[" + ids[a]
