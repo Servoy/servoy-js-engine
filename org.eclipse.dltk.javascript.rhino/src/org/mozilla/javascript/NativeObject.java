@@ -366,8 +366,21 @@ public class NativeObject extends IdScriptableObject implements Map
               {
                 Object arg = args.length < 1 ? Undefined.instance : args[0];
                 Scriptable obj = (arg == null) ? null : ensureScriptable(arg);
+                // special case if Object.create() is called with an object that i is a NativeError then also create
+                // here a NativeError so that the prototype hiearchy is fully NativeErrors instead of a mix
+                // whne the normal object is NativeObject->NativeError-> NativeObject (last is default proto of the native error proto)
+                // then it will go wrong when asking the "stack" because it always expects that from an NativeError the proto is also NativeError
+            	boolean createError = false;
+            	Scriptable classPrototype = obj;
+            	while(classPrototype != null) {
+            		if(classPrototype instanceof NativeError) {
+            			createError = true;
+            			break;
+            		}
+            		classPrototype = classPrototype.getPrototype();
+            	}
 
-                ScriptableObject newObject = new NativeObject();
+                ScriptableObject newObject = createError ? new NativeError(): new NativeObject();
                 newObject.setParentScope(getParentScope());
                 newObject.setPrototype(obj);
 
