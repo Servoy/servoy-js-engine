@@ -728,15 +728,7 @@ public class JavaMembers
                 while (currentClass != null) {
                     // get all declared fields in this class, make them
                     // accessible, and save
-                    Field[] declared = currentClass.getDeclaredFields();
-                    for (Field field : declared) {
-                        int mod = field.getModifiers();
-                        if (includePrivate || isPublic(mod) || isProtected(mod)) {
-                            if (!field.isAccessible())
-                                field.setAccessible(true);
-                            fieldsList.add(field);
-                        }
-                    }
+					fillDeclaredFields(includePrivate, fieldsList, currentClass);
                     // walk up superclass chain.  no need to deal specially with
                     // interfaces, since they can't have fields
                     currentClass = currentClass.getSuperclass();
@@ -749,6 +741,26 @@ public class JavaMembers
         }
         return cl.getFields();
     }
+
+	/**
+	 * @param includePrivate
+	 * @param fieldsList
+	 * @param currentClass
+	 */
+	private void fillDeclaredFields(boolean includePrivate, List<Field> fieldsList, Class<?> currentClass) {
+		Field[] declared = currentClass.getDeclaredFields();
+		for (Field field : declared) {
+			int mod = field.getModifiers();
+			if (includePrivate || isPublic(mod) || isProtected(mod)) {
+				if (!field.isAccessible())
+					field.setAccessible(true);
+				fieldsList.add(field);
+			}
+		}
+		for (Class<?> iface : currentClass.getInterfaces()) {
+			fillDeclaredFields(includePrivate, fieldsList, iface);
+		}
+	}
 
     private MemberBox findGetter(boolean isStatic, Map<String,Object> ht, String prefix,
                                  String propertyName)
