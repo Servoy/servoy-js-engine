@@ -322,7 +322,8 @@ public class JavaMembers
                                                       boolean includePrivate)
     {
         Map<MethodSignature,Method> map = new HashMap<MethodSignature,Method>();
-        discoverAccessibleMethods(clazz, map, includeProtected, includePrivate);
+        discoverAccessibleMethods(clazz, map, includeProtected, false);
+        if (includePrivate) discoverAccessibleMethods(clazz, map, includeProtected, true);
         return map.values().toArray(new Method[map.size()]);
     }
 
