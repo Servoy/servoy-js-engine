@@ -4,7 +4,7 @@
 	<artifactId>com.servoy.js.engine</artifactId>
 	<groupId>com.servoy</groupId>
 	<packaging>pom</packaging>
-	<version>2020.6.0.3582</version>
+	<version>2020.6.1.3583</version>
 	<prerequisites>
 		<maven>3.6.0</maven>
 	</prerequisites>	
