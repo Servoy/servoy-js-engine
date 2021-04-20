@@ -24,7 +24,6 @@ public final class MemberBox implements Serializable
 	static {
 		try {
 			canAccess = Method.class.getMethod("canAccess", Object.class);
-			System.err.println(canAccess);
 		} catch (Exception e) {
 			// ignore
 		}
