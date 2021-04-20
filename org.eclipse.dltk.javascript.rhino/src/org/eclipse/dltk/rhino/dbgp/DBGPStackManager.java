@@ -23,7 +23,7 @@ public class DBGPStackManager {
 
 	private boolean stop;
 	
-	private boolean steppedOut;
+	private DBGPDebugFrame toBreakForStepOut;
 
 	private Context context;
 
@@ -63,7 +63,7 @@ public class DBGPStackManager {
 				suspenOnChangeLine = true;
 		}
 
-		if (!suspenOnChangeLine && (getManager().getSuspendOnEntry()) || steppedOut) {
+		if (!suspenOnChangeLine && (getManager().getSuspendOnEntry()) || (this.toBreakForStepOut != null && getStackFrame(1) == this.toBreakForStepOut)) {
 			if (debugFrame.getWhere().endsWith("module")) {
 				sendSuspend(null);
 			} else
@@ -84,7 +84,11 @@ public class DBGPStackManager {
 				sendSuspend("Break on exit breakpoint: " + hit.method);
 		}
 		if (debugFrame.isSuspend() && stack.size() > 1) {
-			steppedOut = true;
+			this.toBreakForStepOut = getStackFrame(1);
+		}
+		if (debugFrame == toBreakForStepOut)
+		{
+			this.toBreakForStepOut = null;
 		}
 		stack.remove(debugFrame);
 
@@ -102,9 +106,13 @@ public class DBGPStackManager {
 		boolean skipOneSuspend = false;
 		if (suspenOnChangeLine) {
 			skipOneSuspend = true;
-			steppedOut = false;
+			toBreakForStepOut = null;
 			suspenOnChangeLine = false;
 			sendSuspend(null);
+		}
+		if (frame == this.toBreakForStepOut)
+		{
+			this.toBreakForStepOut = null;
 		}
 		if (frame.isSuspend()) {
 			needSuspend = true;
@@ -161,7 +169,7 @@ public class DBGPStackManager {
 		if (stop)
 			return;
 		throwException = false;
-		steppedOut = false;
+		toBreakForStepOut = null;
 		if (observer.sendBreak(reason)) {
 			synchronized (this) {
 				suspended = true;
@@ -251,9 +259,9 @@ public class DBGPStackManager {
 		getStackFrame(0).setSuspend(false);
 		if (this.getStackDepth() > 1) {
 			getStackFrame(1).setSuspend(true);
+			toBreakForStepOut = getStackFrame(1);
 		}
 		endSuspend();
-		steppedOut = true;
 	}
 
 	public static void stopAll() {
