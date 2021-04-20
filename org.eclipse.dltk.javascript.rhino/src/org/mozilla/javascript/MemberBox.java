@@ -19,6 +19,16 @@ import java.io.*;
 
 public final class MemberBox implements Serializable
 {
+	private static Method canAccess = null;
+	
+	static {
+		try {
+			canAccess = Method.class.getMethod("canAccess", Object.class);
+			System.err.println(canAccess);
+		} catch (Exception e) {
+			// ignore
+		}
+	}
     static final long serialVersionUID = 6358550398665688245L;
 
     private transient Member memberObject;
@@ -135,6 +145,25 @@ public final class MemberBox implements Serializable
         Method method = method();
         try {
             try {
+				if (!canAccess(target, method)) {
+					Class<?> declaredClz = method.getDeclaringClass();
+					Method met = null;
+					outer: do {
+						for (Class<?> interfaceClass : declaredClz.getInterfaces()) {
+							met = getAccessibleMethod(target, interfaceClass, getName(), method.getParameterTypes());
+							if (met != null) break outer;
+						}
+						declaredClz = declaredClz.getSuperclass();
+						if (declaredClz != null) {
+							met = getAccessibleMethod(target, declaredClz, getName(), method.getParameterTypes());
+							if (met != null) break outer;
+						}
+					} while (met == null && declaredClz != null);
+					if (met != null) {
+						memberObject = met;
+						method = met;
+					}
+				}
                 return method.invoke(target, args);
             } catch (IllegalAccessException ex) {
                 Method accessible = searchAccessibleMethod(method, argTypes);
@@ -163,6 +192,23 @@ public final class MemberBox implements Serializable
         }
     }
 
+	/**
+	 * @param target
+	 * @param method
+	 * @return
+	 */
+	private static boolean canAccess(Object target, Method method) {
+		if (canAccess != null) {
+			try {
+				Boolean retValue = (Boolean) canAccess.invoke(method, target);
+				return retValue;
+			} catch (Exception e) {
+				// ignore
+			}
+		}
+		return true;
+	}
+
     Object newInstance(Object[] args)
     {
         Constructor<?> ctor = ctor();
@@ -179,6 +225,16 @@ public final class MemberBox implements Serializable
             throw Context.throwAsScriptRuntimeEx(ex);
         }
     }
+    
+	private static Method getAccessibleMethod(Object target, Class<?> cls, String name, Class<?>... parameterTypes) {
+		try {
+			Method method = cls.getMethod(name, parameterTypes);
+			if (canAccess(target, method))
+				return method;
+		} catch (Exception e) {
+		}
+		return null;
+	}
 
     private static Method searchAccessibleMethod(Method method, Class<?>[] params)
     {
