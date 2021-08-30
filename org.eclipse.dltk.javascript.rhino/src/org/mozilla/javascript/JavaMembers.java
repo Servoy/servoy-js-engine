@@ -8,6 +8,8 @@ package org.mozilla.javascript;
 
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static java.lang.reflect.Modifier.isProtected;
 import static java.lang.reflect.Modifier.isPublic;
@@ -21,6 +23,8 @@ import static java.lang.reflect.Modifier.isPublic;
  */
 public class JavaMembers
 {
+	private static ConcurrentMap<Member, Boolean>cantAccess = new ConcurrentHashMap<>();
+	
     public JavaMembers(Scriptable scope, Class<?> cl)
     {
         this(scope, cl, false);
@@ -338,6 +342,7 @@ public class JavaMembers
                         try {
                             Method[] methods = clazz.getDeclaredMethods();
                             for (Method method : methods) {
+                            	if (cantAccess.containsKey(method)) continue;
                                 int mods = method.getModifiers();
 
                                 if (isPublic(mods)
@@ -345,9 +350,14 @@ public class JavaMembers
                                         || includePrivate) {
                                     MethodSignature sig = new MethodSignature(method);
                                     if (!map.containsKey(sig)) {
-                                        if (includePrivate && !method.isAccessible())
-                                            method.setAccessible(true);
-                                        map.put(sig, method);
+                                    	try {
+	                                        if (includePrivate && !method.isAccessible())
+	                                            method.setAccessible(true);
+	                                        map.put(sig, method);
+                                    	} catch(RuntimeException e) {
+                                    		// ignore this can be java 9+ that don't allow setAccessible to true.
+                                    		cantAccess.put(method, Boolean.FALSE);
+                                    	}
                                     }
                                 }
                             }
@@ -751,11 +761,17 @@ public class JavaMembers
 	private void fillDeclaredFields(boolean includePrivate, List<Field> fieldsList, Class<?> currentClass) {
 		Field[] declared = currentClass.getDeclaredFields();
 		for (Field field : declared) {
+			if (cantAccess.containsKey( field)) continue;
 			int mod = field.getModifiers();
 			if (includePrivate || isPublic(mod) || isProtected(mod)) {
-				if (!field.isAccessible())
-					field.setAccessible(true);
-				fieldsList.add(field);
+				try {
+					if (!field.isAccessible())
+						field.setAccessible(true);
+					fieldsList.add(field);
+            	} catch(RuntimeException e) {
+            		// ignore this can be java 9+ that don't allow setAccessible to true.
+            		cantAccess.put(field, Boolean.FALSE);
+            	}
 			}
 		}
 		for (Class<?> iface : currentClass.getInterfaces()) {
