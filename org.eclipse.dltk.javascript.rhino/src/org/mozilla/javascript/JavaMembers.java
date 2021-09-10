@@ -725,6 +725,9 @@ public class JavaMembers
                     " of class " + cl.getName() +
                     " due to lack of privileges.");
           }
+          catch (RuntimeException e) {
+        	  // very likely a InaccessibleObjectException we should just ignore this
+          }
       }
       return cl.getConstructors();
     }
