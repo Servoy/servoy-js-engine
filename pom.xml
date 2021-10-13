@@ -9,11 +9,11 @@
 		<maven>3.6.3</maven>
 	</prerequisites>	
 	<properties>
-		<tycho.version>2.4.0</tycho.version>
+		<tycho.version>2.5.0</tycho.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 	    <maven.compiler.target>1.8</maven.compiler.target>
-	    <eclipse.url>http://download.eclipse.org/eclipse/updates/4.15/</eclipse.url>
+	    <eclipse.url>http://download.eclipse.org/eclipse/updates/4.21/</eclipse.url>
 	</properties>
 
 	<repositories>
