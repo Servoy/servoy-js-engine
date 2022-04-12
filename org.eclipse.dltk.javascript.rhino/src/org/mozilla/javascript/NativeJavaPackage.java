@@ -113,41 +113,36 @@ public class NativeJavaPackage extends ScriptableObject
         Object cached = super.get(name, start);
         if (cached != NOT_FOUND)
             return cached;
-        if (negativeCache != null && negativeCache.contains(name)) {
-            // Performance optimization: see bug 421071
-            return null;
+        Scriptable newValue = null;
+        String className = (packageName.length() == 0)
+        		? name : packageName + '.' + name;
+        if (!negativeCache.contains(name)) {
+        	Context cx = Context.getContext();
+        	ClassShutter shutter = cx.getClassShutter();
+        	if (shutter == null || shutter.visibleToScripts(className)) {
+        		Class<?> cl = null;
+        		if (classLoader != null) {
+        			cl = Kit.classOrNull(classLoader, className);
+        		} else {
+        			cl = Kit.classOrNull(className);
+        		}
+        		if (cl != null) {
+        			WrapFactory wrapFactory = cx.getWrapFactory();
+        			newValue = wrapFactory.wrapJavaClass(cx, getTopLevelScope(this), cl);
+        			newValue.setPrototype(getPrototype());
+        		}
+        	}
+            if (newValue == null) {
+                // Performance optimization: see bug 421071
+            	negativeCache.add(name);
+            }
         }
 
-        String className = (packageName.length() == 0)
-                               ? name : packageName + '.' + name;
-        Context cx = Context.getContext();
-        ClassShutter shutter = cx.getClassShutter();
-        Scriptable newValue = null;
-        if (shutter == null || shutter.visibleToScripts(className)) {
-            Class<?> cl = null;
-            if (classLoader != null) {
-                cl = Kit.classOrNull(classLoader, className);
-            } else {
-                cl = Kit.classOrNull(className);
-            }
-            if (cl != null) {
-                WrapFactory wrapFactory = cx.getWrapFactory();
-                newValue = wrapFactory.wrapJavaClass(cx, getTopLevelScope(this), cl);
-                newValue.setPrototype(getPrototype());
-            }
-        }
-        if (newValue == null) {
-            if (createPkg) {
-                NativeJavaPackage pkg;
-                pkg = new NativeJavaPackage(true, className, classLoader);
-                ScriptRuntime.setObjectProtoAndParent(pkg, getParentScope());
-                newValue = pkg;
-            } else {
-                // add to negative cache
-                if (negativeCache == null)
-                    negativeCache = new HashSet<String>();
-                negativeCache.add(name);
-            }
+        if (newValue == null && createPkg) {
+            NativeJavaPackage pkg;
+            pkg = new NativeJavaPackage(true, className, classLoader);
+            ScriptRuntime.setObjectProtoAndParent(pkg, getParentScope());
+            newValue = pkg;
         }
         if (newValue != null) {
             // Make it available for fast lookup and sharing of
@@ -190,5 +185,5 @@ public class NativeJavaPackage extends ScriptableObject
 
     private String packageName;
     private transient ClassLoader classLoader;
-    private Set<String> negativeCache = null;
+    private static final Set<String> negativeCache = new HashSet<String>();
 }
