@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>com.servoy</groupId>
 		<artifactId>com.servoy.js.engine</artifactId>
-		<version>2022.3.4.3746_LTS</version>
+		<version>2022.3.5.3747_LTS</version>
 	</parent>
 	<artifactId>org.eclipse.dltk.javascript.rhino</artifactId>
 	<packaging>eclipse-plugin</packaging>
